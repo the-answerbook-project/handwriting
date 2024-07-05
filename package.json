@@ -28,7 +28,7 @@
     "better-react-mathjax": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-sketch-canvas": "^6.2.0"
+    "react-sketch-canvas": "^7.0.0-next.4"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",

@@ -1,29 +1,41 @@
 import { Button, Theme } from '@radix-ui/themes'
-import { useRef } from 'react'
+import { MathJax, MathJaxContext } from 'better-react-mathjax'
+import { useRef, useState } from 'react'
 import { ReactSketchCanvas } from 'react-sketch-canvas'
 
 import './App.css'
 
 function App() {
+  const [latex, setLatex] = useState('')
+
   const sketchRef = useRef(null)
 
-  function exportSVG() {
+  const exportSVG = () => {
     // @ts-expect-error: sketchRef is not null
     sketchRef.current.exportPaths().then((res) => {
-      console.log(JSON.stringify(res))
+      const json = JSON.stringify(res)
+      // api call
     })
+  }
+
+  const renderLatex = () => {
+    // api call
   }
 
   return (
     <Theme radius="small" appearance="dark">
-      <ReactSketchCanvas
-        width="1000"
-        height="500"
-        strokeWidth={4}
-        strokeColor="red"
-        ref={sketchRef}
-      />
-      <Button onClick={exportSVG}>Save</Button>
+      <MathJaxContext>
+        <ReactSketchCanvas
+          width="1000"
+          height="500"
+          strokeWidth={4}
+          strokeColor="red"
+          ref={sketchRef}
+        />
+        <Button onClick={renderLatex}>Render Latex</Button>
+        <Button onClick={exportSVG}>Save</Button>
+        <MathJax>{latex}</MathJax>
+      </MathJaxContext>
     </Theme>
   )
 }

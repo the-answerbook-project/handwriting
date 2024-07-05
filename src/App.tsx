@@ -6,7 +6,7 @@ import { ReactSketchCanvas } from 'react-sketch-canvas'
 import './App.css'
 
 function App() {
-  const [latex, setLatex] = useState('')
+  const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
 
   const sketchRef = useRef(null)
 
@@ -25,16 +25,12 @@ function App() {
   return (
     <Theme radius="small" appearance="dark">
       <MathJaxContext>
-        <ReactSketchCanvas
-          width="1000"
-          height="500"
-          strokeWidth={4}
-          strokeColor="red"
-          ref={sketchRef}
-        />
-        <Button onClick={renderLatex}>Render Latex</Button>
-        <Button onClick={exportSVG}>Save</Button>
-        <MathJax>{latex}</MathJax>
+        <ReactSketchCanvas height="50%" strokeWidth={4} strokeColor="red" ref={sketchRef} />
+        <div className="flex-container">
+          <MathJax>{latex}</MathJax>
+          <Button onClick={renderLatex}>Render Latex 🔎</Button>
+        </div>
+        <Button onClick={exportSVG}>Save 💾</Button>
       </MathJaxContext>
     </Theme>
   )

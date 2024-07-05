@@ -4,12 +4,14 @@ import { useRef, useState } from 'react'
 import { ReactSketchCanvas } from 'react-sketch-canvas'
 
 import './App.css'
+import UserSelector from './UserSelector'
 import axiosInstance from './axios'
 
 const USER = 'hpotter'
 
 function App() {
   const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
+  const [username, setUsername] = useState(USER)
 
   const sketchRef = useRef(null)
 
@@ -17,7 +19,7 @@ function App() {
     // @ts-expect-error: sketchRef is not null
     sketchRef.current.exportPaths().then((res) => {
       // api call
-      axiosInstance.put('/handwriting', { username: USER, handwriting: res })
+      axiosInstance.put(`/${username}/handwriting`, { handwriting: res })
     })
   }
 
@@ -34,6 +36,7 @@ function App() {
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
         <Button onClick={exportSVG}>Save 💾</Button>
+        <UserSelector username={username} setUsername={setUsername} />
       </MathJaxContext>
     </Theme>
   )

@@ -1,7 +1,7 @@
 import { Button, Theme } from '@radix-ui/themes'
 import { MathJax, MathJaxContext } from 'better-react-mathjax'
-import { useRef, useState } from 'react'
-import { ReactSketchCanvas } from 'react-sketch-canvas'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas'
 
 import './App.css'
 import UserSelector from './UserSelector'
@@ -13,7 +13,7 @@ function App() {
   const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
   const [username, setUsername] = useState(USER)
 
-  const sketchRef = useRef(null)
+  const sketchRef = useRef<ReactSketchCanvasRef>(null)
 
   const exportSVG = () => {
     // @ts-expect-error: sketchRef is not null
@@ -23,12 +23,23 @@ function App() {
     })
   }
 
-  const renderLatex = () => {
+  const renderLatex = useCallback(() => {
     // api call
     axiosInstance.get(`/${username}/latex`).then((res) => {
-      setLatex(res.data.latex_styled)
+      setLatex(res.data.text)
     })
-  }
+  }, [username])
+
+  useEffect(() => {
+    axiosInstance.get(`/${username}/handwriting`).then((res) => {
+      sketchRef.current?.clearCanvas()
+
+      if (!res.data.error) {
+        sketchRef.current?.loadPaths(res.data)
+        renderLatex()
+      }
+    })
+  }, [username, renderLatex])
 
   return (
     <Theme radius="small" appearance="dark">

@@ -25,6 +25,9 @@ function App() {
 
   const renderLatex = () => {
     // api call
+    axiosInstance.get(`/${username}/latex`).then((res) => {
+      setLatex(res.data.latex_styled)
+    })
   }
 
   return (

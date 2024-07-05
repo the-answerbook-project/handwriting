@@ -4,6 +4,9 @@ import { useRef, useState } from 'react'
 import { ReactSketchCanvas } from 'react-sketch-canvas'
 
 import './App.css'
+import axiosInstance from './axios'
+
+const USER = 'hpotter'
 
 function App() {
   const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
@@ -13,8 +16,8 @@ function App() {
   const exportSVG = () => {
     // @ts-expect-error: sketchRef is not null
     sketchRef.current.exportPaths().then((res) => {
-      const json = JSON.stringify(res)
       // api call
+      axiosInstance.put('/handwriting', { username: USER, handwriting: res })
     })
   }
 

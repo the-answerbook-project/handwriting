@@ -56,7 +56,7 @@ def handwriting(username: str, session: Session = Depends(get_session)):
 
 class HandwritingUpload(BaseModel):
     username: str
-    handwriting: dict
+    handwriting: list
 
 @api_router.put("/handwriting")
 def handwriting(body: HandwritingUpload, session: Session = Depends(get_session)):

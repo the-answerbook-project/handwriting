@@ -1,34 +1,30 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { Button, Theme } from '@radix-ui/themes'
+import { useRef } from 'react'
+import { ReactSketchCanvas } from 'react-sketch-canvas'
+
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const sketchRef = useRef(null)
+
+  function exportSVG() {
+    // @ts-expect-error: sketchRef is not null
+    sketchRef.current.exportPaths().then((res) => {
+      console.log(res)
+    })
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Theme radius="small" appearance="dark">
+      <ReactSketchCanvas
+        width="1000"
+        height="500"
+        strokeWidth={4}
+        strokeColor="red"
+        ref={sketchRef}
+      />
+      <Button onClick={exportSVG}>Save</Button>
+    </Theme>
   )
 }
 

@@ -41,6 +41,7 @@ export default {
         'revert',
         'style',
         'test',
+        'wip'
       ],
     ] as [RuleConfigSeverity, RuleConfigCondition, string[]],
   },

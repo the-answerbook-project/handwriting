@@ -12,6 +12,7 @@ const USER = 'hpotter'
 function App() {
   const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
   const [username, setUsername] = useState(USER)
+  const [eraseMode, setEraseMode] = useState(false)
 
   const sketchRef = useRef<ReactSketchCanvasRef>(null)
 
@@ -21,6 +22,13 @@ function App() {
       // api call
       axiosInstance.put(`/${username}/handwriting`, { handwriting: res })
     })
+  }
+
+  const toggleEraseMode = () => {
+    const newEraseMode = !eraseMode
+    // @ts-expect-error: sketchRef is not null
+    sketchRef.current.eraseMode(newEraseMode)
+    setEraseMode(newEraseMode)
   }
 
   const renderLatex = useCallback(() => {
@@ -49,6 +57,10 @@ function App() {
           <MathJax>{latex}</MathJax>
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
+        <br />
+        <Button onClick={toggleEraseMode}>{eraseMode ? 'Use Pen ✏️' : 'Use Eraser 🧼'}</Button>
+        <br />
+        <br />
         <Button onClick={exportSVG}>Save 💾</Button>
         <UserSelector username={username} setUsername={setUsername} />
       </MathJaxContext>

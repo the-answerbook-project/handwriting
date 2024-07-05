@@ -50,9 +50,6 @@ def handwriting(username: str, session: Session = Depends(get_session)):
 
     if res is None:
         return {"error": "Handwriting not found"}
-    print("MEAP")
-    print("MEAP")
-    print("MEAP")
     print(res[0])
     return res[0].handwriting
 
@@ -61,9 +58,14 @@ class HandwritingUpload(BaseModel):
     username: str
     handwriting: dict
 
-@api_router.post("/handwriting")
+@api_router.put("/handwriting")
 def handwriting(body: HandwritingUpload, session: Session = Depends(get_session)):
-    session.add(Handwriting(username=body.username, handwriting=body.handwriting))
+    existing_handwriting = session.get(Handwriting, body.username)
+    if existing_handwriting:
+        existing_handwriting.handwriting = body.handwriting
+    else:
+        new_handwriting = Handwriting(username=body.username, handwriting=body.handwriting)
+        session.add(new_handwriting)
     session.commit()
     return {"success": True}
 

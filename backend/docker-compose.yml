@@ -1,0 +1,26 @@
+services:
+  backend:
+    image: handwriting-backend
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    command: poetry run uvicorn main:app --reload --host 0.0.0.0 --port 5004
+    environment:
+      - DB_URL=postgresql://user:pass@db/handwriting
+    volumes:
+      - .:/api
+    depends_on:
+      - db
+
+  # add db
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: handwriting
+    volumes:
+      - handwriting-pgdata:/var/lib/postgresql/data
+
+volumes:
+  handwriting-pgdata:

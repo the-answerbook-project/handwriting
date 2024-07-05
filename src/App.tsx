@@ -10,7 +10,7 @@ function App() {
   function exportSVG() {
     // @ts-expect-error: sketchRef is not null
     sketchRef.current.exportPaths().then((res) => {
-      console.log(res)
+      console.log(JSON.stringify(res))
     })
   }
 

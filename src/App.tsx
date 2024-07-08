@@ -40,10 +40,6 @@ function App() {
     }
   }, [excalidrawAPI])
 
-  const ClearButton = () => {
-    return <Button onClick={clearCanvas}>Clear Board</Button>
-  }
-
   const renderLatex = useCallback(() => {
     // api call
     axiosInstance.get(`/${username}/latex`).then((res) => {
@@ -65,6 +61,28 @@ function App() {
         excalidrawAPI?.updateScene({ elements: [] })
       }
     })
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const handleKeyboardAction = (e: KeyboardEvent) => {
+      console.log(e)
+      if ((e.ctrlKey || e.metaKey) && e.key == 'v') {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
+    // @ts-expect-error: the element is a canvas
+    const canvas: HTMLCanvasElement = document.getElementsByClassName('interactive')[0]
+
+    canvas?.addEventListener('contextmenu', handleContextMenu)
+    // TODO: figure out how to only prevent pasting of non-path elements in canvas. Maybe delete non-path elements on excalidraw update?
+    canvas?.addEventListener('keydown', handleKeyboardAction)
+    // return function cleanup() {
+    //     document.removeEventListener('contextmenu', handleContextmenu)
+    // }
   }, [username, renderLatex, excalidrawAPI])
 
   return (

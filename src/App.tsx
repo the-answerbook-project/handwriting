@@ -15,7 +15,8 @@ import './excalidraw.overrides.css'
 const USER = 'hpotter'
 
 function App() {
-  const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
+  const [latex, setLatex] = useState('')
+  const [confidence, setConfidence] = useState(0)
   const [username, setUsername] = useState(USER)
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
   const [excalidrawData, setExcalidrawData] = useState<ExcalidrawInitialDataState | null>(null)
@@ -37,6 +38,7 @@ function App() {
     // api call
     axiosInstance.get(`/${username}/latex`).then((res) => {
       setLatex(res.data.text)
+      setConfidence(res.data.confidence)
     })
   }, [username])
 
@@ -73,6 +75,7 @@ function App() {
           <MathJax>{latex}</MathJax>
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
+        <div>Confidence: {confidence}</div>
         <br />
         <Button onClick={exportSVG}>Save 💾</Button>
         <UserSelector username={username} setUsername={setUsername} />

@@ -1,0 +1,20 @@
+$titles: 'Rectangle', 'Diamond', 'Ellipse', 'Arrow', 'Line', 'Text', 'Keep selected';
+
+div.App-toolbar .Stack {
+  label.ToolIcon {
+    @each $title in $titles {
+      // Create a selector for elements with a title attribute starting with the current title
+      &[title^='#{$title}'] {
+        display: none;
+      }
+    }
+  }
+
+  .App-toolbar__divider {
+    display: none;
+  }
+
+  .App-toolbar__extra-tools-trigger {
+    display: none;
+  }
+}

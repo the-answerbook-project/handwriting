@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import UserSelector from './UserSelector'
 import axiosInstance from './axios'
-import './excalidraw.overrides.css'
+import './excalidraw.overrides.scss'
 
 const USER = 'hpotter'
 
@@ -32,6 +32,16 @@ function App() {
     axiosInstance.put(`/${username}/handwriting`, {
       handwriting: { excalidraw: JSON.parse(asJSON) },
     })
+  }
+
+  const clearCanvas = useCallback(() => {
+    if (confirm('Are you sure you want to clear the board?')) {
+      excalidrawAPI?.updateScene({ elements: [] })
+    }
+  }, [excalidrawAPI])
+
+  const ClearButton = () => {
+    return <Button onClick={clearCanvas}>Clear Board</Button>
   }
 
   const renderLatex = useCallback(() => {
@@ -68,7 +78,9 @@ function App() {
             excalidrawAPI={setExcalidrawAPI}
             initialData={excalidrawData}
           >
-            <MainMenu />
+            <MainMenu>
+              <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
+            </MainMenu>
           </Excalidraw>
         </div>
         <div className="flex-container">

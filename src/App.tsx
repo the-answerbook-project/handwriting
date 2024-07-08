@@ -1,3 +1,6 @@
+import { Excalidraw, MainMenu, Sidebar, serializeAsJSON } from '@excalidraw/excalidraw'
+import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types'
+import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types'
 import { Button, Theme } from '@radix-ui/themes'
 import { MathJax, MathJaxContext } from 'better-react-mathjax'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -6,6 +9,7 @@ import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas'
 import './App.css'
 import UserSelector from './UserSelector'
 import axiosInstance from './axios'
+import './excalidraw.overrides.css'
 
 const USER = 'hpotter'
 
@@ -13,15 +17,18 @@ function App() {
   const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
   const [username, setUsername] = useState(USER)
   const [eraseMode, setEraseMode] = useState(false)
-
+  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
   const sketchRef = useRef<ReactSketchCanvasRef>(null)
 
   const exportSVG = () => {
-    // @ts-expect-error: sketchRef is not null
-    sketchRef.current.exportPaths().then((res) => {
-      // api call
-      axiosInstance.put(`/${username}/handwriting`, { handwriting: res })
-    })
+    // @ts-expect-error: excalidrawAPI is not null
+    const asJSON = serializeAsJSON(
+      excalidrawAPI?.getSceneElements(),
+      excalidrawAPI?.getAppState(),
+      excalidrawAPI?.getFiles(),
+      'local'
+    )
+    console.log(excalidrawAPI?.getSceneElements())
   }
 
   const toggleEraseMode = () => {
@@ -49,12 +56,23 @@ function App() {
     })
   }, [username, renderLatex])
 
+  // setExcalidrawState({ elements, appState, files, type: "local" })
+
   return (
     <Theme radius="small" appearance="dark">
       <MathJaxContext>
-        <ReactSketchCanvas height="50%" strokeWidth={4} strokeColor="red" ref={sketchRef} />
+        <div style={{ height: '50vh' }}>
+          <Excalidraw
+            zenModeEnabled
+            UIOptions={{ tools: { image: false } }}
+            gridModeEnabled
+            excalidrawAPI={setExcalidrawAPI}
+          >
+            <MainMenu />
+          </Excalidraw>
+        </div>
         <div className="flex-container">
-          <MathJax>{latex}</MathJax>
+          {/* <MathJax>{latex}</MathJax> */}
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
         <br />

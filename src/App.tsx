@@ -1,6 +1,12 @@
 import { Excalidraw, MainMenu, Sidebar, serializeAsJSON } from '@excalidraw/excalidraw'
+import { loadFromJSON } from '@excalidraw/excalidraw/types/data'
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types'
-import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types'
+import {
+  AppState,
+  BinaryFiles,
+  ExcalidrawImperativeAPI,
+  ExcalidrawInitialDataState,
+} from '@excalidraw/excalidraw/types/types'
 import { Button, Theme } from '@radix-ui/themes'
 import { MathJax, MathJaxContext } from 'better-react-mathjax'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -18,17 +24,21 @@ function App() {
   const [username, setUsername] = useState(USER)
   const [eraseMode, setEraseMode] = useState(false)
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
+  const [excalidrawData, setExcalidrawData] = useState<ExcalidrawInitialDataState | null>(null)
+
   const sketchRef = useRef<ReactSketchCanvasRef>(null)
 
   const exportSVG = () => {
-    // @ts-expect-error: excalidrawAPI is not null
     const asJSON = serializeAsJSON(
-      excalidrawAPI?.getSceneElements(),
-      excalidrawAPI?.getAppState(),
-      excalidrawAPI?.getFiles(),
+      excalidrawAPI!.getSceneElements(),
+      excalidrawAPI!.getAppState(),
+      excalidrawAPI!.getFiles(),
       'local'
     )
-    console.log(excalidrawAPI?.getSceneElements())
+
+    axiosInstance.put(`/${username}/handwriting`, {
+      handwriting: { excalidraw: JSON.parse(asJSON) },
+    })
   }
 
   const toggleEraseMode = () => {
@@ -47,14 +57,26 @@ function App() {
 
   useEffect(() => {
     axiosInstance.get(`/${username}/handwriting`).then((res) => {
-      sketchRef.current?.clearCanvas()
-
+      setExcalidrawData(res.data.excalidraw)
+      console.log(res.data.excalidraw)
       if (!res.data.error) {
-        sketchRef.current?.loadPaths(res.data)
-        renderLatex()
+        excalidrawAPI?.updateScene({
+          appState: res.data.excalidraw.appState,
+          elements: res.data.excalidraw.elements,
+        })
+      } else {
+        excalidrawAPI?.updateScene({ elements: [] })
       }
+      //loadFromJSON(res.data.excalidraw.appState, res.data.excalidraw.elements)
+
+      // sketchRef.current?.clearCanvas()
+
+      // if (!res.data.error) {
+      //   sketchRef.current?.loadPaths(res.data)
+      //   renderLatex()
+      // }
     })
-  }, [username, renderLatex])
+  }, [username, renderLatex, excalidrawAPI])
 
   // setExcalidrawState({ elements, appState, files, type: "local" })
 
@@ -67,12 +89,13 @@ function App() {
             UIOptions={{ tools: { image: false } }}
             gridModeEnabled
             excalidrawAPI={setExcalidrawAPI}
+            initialData={excalidrawData}
           >
             <MainMenu />
           </Excalidraw>
         </div>
         <div className="flex-container">
-          {/* <MathJax>{latex}</MathJax> */}
+          <MathJax>{latex}</MathJax>
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
         <br />

@@ -1,65 +1,111 @@
+import { Excalidraw, MainMenu, serializeAsJSON } from '@excalidraw/excalidraw'
+import {
+  ExcalidrawImperativeAPI,
+  ExcalidrawInitialDataState,
+} from '@excalidraw/excalidraw/types/types'
 import { Button, Theme } from '@radix-ui/themes'
 import { MathJax, MathJaxContext } from 'better-react-mathjax'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas'
+import { useCallback, useEffect, useState } from 'react'
 
 import './App.css'
 import UserSelector from './UserSelector'
 import axiosInstance from './axios'
+import './excalidraw.overrides.scss'
 
 const USER = 'hpotter'
 
 function App() {
-  const [latex, setLatex] = useState('\\(\\frac{10}{4x} \\approx 2^{12}\\)')
+  const [latex, setLatex] = useState('')
+  const [confidence, setConfidence] = useState(0)
   const [username, setUsername] = useState(USER)
-  const [eraseMode, setEraseMode] = useState(false)
-
-  const sketchRef = useRef<ReactSketchCanvasRef>(null)
+  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
+  const [excalidrawData, setExcalidrawData] = useState<ExcalidrawInitialDataState | null>(null)
 
   const exportSVG = () => {
-    // @ts-expect-error: sketchRef is not null
-    sketchRef.current.exportPaths().then((res) => {
-      // api call
-      axiosInstance.put(`/${username}/handwriting`, { handwriting: res })
+    const asJSON = serializeAsJSON(
+      excalidrawAPI!.getSceneElements(),
+      excalidrawAPI!.getAppState(),
+      excalidrawAPI!.getFiles(),
+      'local'
+    )
+
+    axiosInstance.put(`/${username}/handwriting`, {
+      handwriting: { excalidraw: JSON.parse(asJSON) },
     })
   }
 
-  const toggleEraseMode = () => {
-    const newEraseMode = !eraseMode
-    // @ts-expect-error: sketchRef is not null
-    sketchRef.current.eraseMode(newEraseMode)
-    setEraseMode(newEraseMode)
-  }
+  const clearCanvas = useCallback(() => {
+    if (confirm('Are you sure you want to clear the board?')) {
+      excalidrawAPI?.updateScene({ elements: [] })
+    }
+  }, [excalidrawAPI])
 
   const renderLatex = useCallback(() => {
     // api call
     axiosInstance.get(`/${username}/latex`).then((res) => {
       setLatex(res.data.text)
+      setConfidence(res.data.confidence)
     })
   }, [username])
 
   useEffect(() => {
     axiosInstance.get(`/${username}/handwriting`).then((res) => {
-      sketchRef.current?.clearCanvas()
-
+      setExcalidrawData(res.data.excalidraw)
       if (!res.data.error) {
-        sketchRef.current?.loadPaths(res.data)
-        renderLatex()
+        excalidrawAPI?.updateScene({
+          appState: res.data.excalidraw.appState,
+          elements: res.data.excalidraw.elements,
+        })
+        // renderLatex()
+      } else {
+        excalidrawAPI?.updateScene({ elements: [] })
       }
     })
-  }, [username, renderLatex])
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const handleKeyboardAction = (e: KeyboardEvent) => {
+      console.log(e)
+      if ((e.ctrlKey || e.metaKey) && e.key == 'v') {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
+    // @ts-expect-error: the element is a canvas
+    const canvas: HTMLCanvasElement = document.getElementsByClassName('interactive')[0]
+
+    canvas?.addEventListener('contextmenu', handleContextMenu)
+    // TODO: figure out how to only prevent pasting of non-path elements in canvas. Maybe delete non-path elements on excalidraw update?
+    canvas?.addEventListener('keydown', handleKeyboardAction)
+    // return function cleanup() {
+    //     document.removeEventListener('contextmenu', handleContextmenu)
+    // }
+  }, [username, renderLatex, excalidrawAPI])
 
   return (
     <Theme radius="small" appearance="dark">
       <MathJaxContext>
-        <ReactSketchCanvas height="50%" strokeWidth={4} strokeColor="red" ref={sketchRef} />
+        <div style={{ height: '50vh' }}>
+          <Excalidraw
+            zenModeEnabled
+            UIOptions={{ tools: { image: false } }}
+            gridModeEnabled
+            excalidrawAPI={setExcalidrawAPI}
+            initialData={excalidrawData}
+          >
+            <MainMenu>
+              <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
+            </MainMenu>
+          </Excalidraw>
+        </div>
         <div className="flex-container">
           <MathJax>{latex}</MathJax>
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
-        <br />
-        <Button onClick={toggleEraseMode}>{eraseMode ? 'Use Pen ✏️' : 'Use Eraser 🧼'}</Button>
-        <br />
+        <div>Confidence: {confidence}</div>
         <br />
         <Button onClick={exportSVG}>Save 💾</Button>
         <UserSelector username={username} setUsername={setUsername} />

@@ -1,5 +1,5 @@
 import { ExcalidrawFreeDrawElement } from '@excalidraw/excalidraw/types/element/types'
-import { AppState, SceneData } from '@excalidraw/excalidraw/types/types'
+import { SceneData } from '@excalidraw/excalidraw/types/types'
 import axios, { AxiosError } from 'axios'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -68,6 +68,7 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
   }, [username])
 
   useEffect(() => {
+    if (strokes.elements?.length === 0) return
     const abortController = new AbortController()
 
     const latexFetch = getLatexFromStrokes(token, strokes, abortController)

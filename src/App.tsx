@@ -13,15 +13,15 @@ import './App.css'
 import UserSelector from './UserSelector'
 import axiosInstance from './axios'
 import './excalidraw.overrides.scss'
+import useLiveUpdates from './live-updates.hook'
 
 const USER = 'hpotter'
 
 function App() {
-  const [latex, setLatex] = useState('')
-  const [confidence, setConfidence] = useState(0)
   const [username, setUsername] = useState(USER)
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
   const [excalidrawData, setExcalidrawData] = useState<ExcalidrawInitialDataState | null>(null)
+  const { latex, updateStrokes } = useLiveUpdates(username)
 
   const exportSVG = () => {
     const asJSON = serializeAsJSON(
@@ -41,14 +41,6 @@ function App() {
       excalidrawAPI?.updateScene({ elements: [] })
     }
   }, [excalidrawAPI])
-
-  const renderLatex = useCallback(() => {
-    // api call
-    axiosInstance.get(`/${username}/latex`).then((res) => {
-      setLatex(res.data.text)
-      setConfidence(res.data.confidence)
-    })
-  }, [username])
 
   useEffect(() => {
     axiosInstance.get(`/${username}/handwriting`).then((res) => {
@@ -76,17 +68,16 @@ function App() {
 
     const pointerUpHandler = ({ type }: AppState['activeTool']): void => {
       if (type == 'freedraw' || type == 'eraser') {
-        // rerender latex
-        console.log('api call')
+        updateStrokes({ elements: excalidrawAPI?.getSceneElements() })
       }
     }
 
     excalidrawAPI?.onPointerUp(pointerUpHandler)
 
     return () => canvas?.removeEventListener('contextmenu', handleContextMenu)
-  }, [username, renderLatex, excalidrawAPI])
+  }, [username, updateStrokes, excalidrawAPI])
 
-  const pasteHandler = (data: ClipboardData, _: any): boolean => !data.text
+  const pasteHandler = (data: ClipboardData): boolean => !data.text
 
   return (
     <Theme radius="small" appearance="dark">
@@ -105,12 +96,9 @@ function App() {
             </MainMenu>
           </Excalidraw>
         </div>
-        {/* <div className="flex-container">
+        <div className="flex-container">
           <MathJax>{latex}</MathJax>
-          <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
-        <div>Confidence: {confidence}</div> */}
-        <br />
         <Button onClick={exportSVG}>Save 💾</Button>
         <UserSelector username={username} setUsername={setUsername} />
       </MathJaxContext>

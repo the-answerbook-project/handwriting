@@ -1,4 +1,6 @@
 import logging
+import os
+import requests
 from api.models.handwriting import Handwriting
 from api.services.mathpix import react_canvas_to_mathpix_strokes
 from fastapi import APIRouter, Depends, Request
@@ -91,3 +93,18 @@ def latex(username: str, session: Session = Depends(get_session)):
     handwritingraw = res[0]
 
     return handwritingraw.latex  
+
+@api_router.get("/{username}/mathpix-token")
+def mathpix_token(username: str, session: Session = Depends(get_session)):
+    headers = {
+        "app_id": os.getenv("MATHPIX_APP_ID"),
+        "app_key": os.getenv("MATHPIX_API_KEY"),
+    }
+
+    response = requests.post(
+        "https://api.mathpix.com/v3/app-tokens", 
+        headers=headers,
+        json={ "include_strokes_session_id": True },
+    )
+
+    return response.json()

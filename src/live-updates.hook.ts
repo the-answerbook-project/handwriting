@@ -41,16 +41,21 @@ const transformStrokesForAPI = (strokes: Strokes): Record<string, number[][]> =>
 }
 
 const getLatexFromStrokes = (token: Token, strokes: Strokes, abortController: AbortController) => {
-  return axios.post(`https://api.mathpix.com/v3/strokes`, {
-    signal: abortController.signal,
-    headers: {
-      app_token: token.app_token,
-      strokes_session_id: token.strokes_session_id,
+  return axios.post(
+    `https://api.mathpix.com/v3/strokes`,
+    {
+      strokes: {
+        strokes: transformStrokesForAPI(strokes),
+      },
     },
-    strokes: {
-      strokes: transformStrokesForAPI(strokes),
-    },
-  })
+    {
+      signal: abortController.signal,
+      headers: {
+        app_token: token.app_token,
+        strokes_session_id: token.strokes_session_id,
+      },
+    }
+  )
 }
 
 const useLiveUpdates = (username: string): LiveUpdateHook => {
@@ -63,7 +68,7 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
 
   const getToken = useCallback(() => {
     axiosInstance.get(`/${username}/mathpix-token`).then((res) => {
-      setToken(res.data.token)
+      setToken(res.data)
     })
   }, [username])
 
@@ -76,7 +81,6 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
       .then(({ data }) => setLatex(data.text))
       .catch((error: Error | AxiosError) => {
         if (axios.isAxiosError(error) && error.response?.status === 401) {
-          console.log('refreshing token...')
           getToken()
         } else {
           console.error(error)
@@ -91,7 +95,6 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
   useEffect(getToken, [getToken])
 
   useEffect(() => {
-    // api call
     const abortController = new AbortController()
 
     axiosInstance.get(`/${username}/latex`, { signal: abortController.signal }).then((res) => {

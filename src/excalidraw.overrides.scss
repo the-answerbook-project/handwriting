@@ -18,3 +18,21 @@ div.App-toolbar .Stack {
     display: none;
   }
 }
+
+div.App-toolbar-content {
+  [aria-label='Edit'] {
+    display: none;
+  }
+  [aria-label='Duplicate'] {
+    display: none;
+  }
+}
+
+div.mobile-misc-tools-container {
+  [title='Library'] {
+    display: none;
+  }
+  [title^='Keep selected'] {
+    display: none;
+  }
+}

@@ -1,6 +1,7 @@
 import { Excalidraw, MainMenu, serializeAsJSON } from '@excalidraw/excalidraw'
 import { ClipboardData } from '@excalidraw/excalidraw/types/clipboard'
 import {
+  AppState,
   ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types/types'
@@ -73,6 +74,15 @@ function App() {
 
     canvas?.addEventListener('contextmenu', handleContextMenu)
 
+    const pointerUpHandler = ({ type }: AppState['activeTool']): void => {
+      if (type == 'freedraw' || type == 'eraser') {
+        // rerender latex
+        console.log('api call')
+      }
+    }
+
+    excalidrawAPI?.onPointerUp(pointerUpHandler)
+
     return () => canvas?.removeEventListener('contextmenu', handleContextMenu)
   }, [username, renderLatex, excalidrawAPI])
 
@@ -95,11 +105,11 @@ function App() {
             </MainMenu>
           </Excalidraw>
         </div>
-        <div className="flex-container">
+        {/* <div className="flex-container">
           <MathJax>{latex}</MathJax>
           <Button onClick={renderLatex}>Render Latex 🔎</Button>
         </div>
-        <div>Confidence: {confidence}</div>
+        <div>Confidence: {confidence}</div> */}
         <br />
         <Button onClick={exportSVG}>Save 💾</Button>
         <UserSelector username={username} setUsername={setUsername} />

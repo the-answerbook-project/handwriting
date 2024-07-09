@@ -28,8 +28,8 @@ def convertStrokes(canvasStrokes: List[Dict]) -> Dict[str, List[List[float]]]:
   return strokes
 
 def react_canvas_to_mathpix_strokes(canvasStrokes: List[Dict]) -> Dict[str, List[List[float]]]:
+  logger.info("Running mathpix...")
   strokes = convertStrokes(canvasStrokes)
-  logger.error(strokes)
     
   headers = {
     "app_id": os.getenv("MATHPIX_APP_ID"),

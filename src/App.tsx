@@ -1,4 +1,5 @@
 import { Excalidraw, MainMenu, serializeAsJSON } from '@excalidraw/excalidraw'
+import { ClipboardData } from '@excalidraw/excalidraw/types/clipboard'
 import {
   ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
@@ -66,24 +67,16 @@ function App() {
       e.preventDefault()
       e.stopPropagation()
     }
-    const handleKeyboardAction = (e: KeyboardEvent) => {
-      console.log(e)
-      if ((e.ctrlKey || e.metaKey) && e.key == 'v') {
-        e.preventDefault()
-        e.stopPropagation()
-      }
-    }
 
     // @ts-expect-error: the element is a canvas
     const canvas: HTMLCanvasElement = document.getElementsByClassName('interactive')[0]
 
     canvas?.addEventListener('contextmenu', handleContextMenu)
-    // TODO: figure out how to only prevent pasting of non-path elements in canvas. Maybe delete non-path elements on excalidraw update?
-    canvas?.addEventListener('keydown', handleKeyboardAction)
-    // return function cleanup() {
-    //     document.removeEventListener('contextmenu', handleContextmenu)
-    // }
+
+    return () => canvas?.removeEventListener('contextmenu', handleContextMenu)
   }, [username, renderLatex, excalidrawAPI])
+
+  const pasteHandler = (data: ClipboardData, _: any): boolean => !data.text
 
   return (
     <Theme radius="small" appearance="dark">
@@ -95,6 +88,7 @@ function App() {
             gridModeEnabled
             excalidrawAPI={setExcalidrawAPI}
             initialData={excalidrawData}
+            onPaste={pasteHandler}
           >
             <MainMenu>
               <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>

@@ -67,10 +67,10 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
   const [strokes, setStrokes] = useState<Strokes>({ elements: [] })
 
   const getToken = useCallback(() => {
-    axiosInstance.get(`/${username}/mathpix-token`).then((res) => {
+    axiosInstance.get(`/hpotter/mathpix-token`).then((res) => {
       setToken(res.data)
     })
-  }, [username])
+  }, [])
 
   useEffect(() => {
     if (strokes.elements?.length === 0) return

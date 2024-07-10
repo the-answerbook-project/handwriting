@@ -21,6 +21,7 @@ function App() {
   const [username, setUsername] = useState(USER)
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
   const [excalidrawData, setExcalidrawData] = useState<ExcalidrawInitialDataState | null>(null)
+  const [viewOnly] = useState(false)
   const { latex, updateStrokes } = useLiveUpdates(username)
 
   const exportSVG = () => {
@@ -117,7 +118,7 @@ function App() {
   return (
     <Theme radius="small" appearance="dark">
       <div
-        style={{ height: '80vh' }}
+        className="excalidraw-container-container"
         onKeyDownCapture={keyDownHandler}
         onDoubleClick={(e) => {
           e.preventDefault()
@@ -131,9 +132,14 @@ function App() {
           excalidrawAPI={setExcalidrawAPI}
           initialData={excalidrawData}
           onPaste={pasteHandler}
+          viewModeEnabled={viewOnly}
         >
           <MainMenu>
-            <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
+            {!viewOnly && (
+              <MainMenu.Item onSelect={clearCanvas} icon={<>🧽</>}>
+                Clear canvas
+              </MainMenu.Item>
+            )}
           </MainMenu>
         </Excalidraw>
       </div>

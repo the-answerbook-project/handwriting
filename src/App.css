@@ -55,3 +55,16 @@
   margin: 10px;
   gap: 10px;
 }
+
+.excalidraw-container-container {
+  height: 80vh;
+  box-sizing: border-box;
+  padding: 50px;
+}
+
+.excalidraw-container {
+  height: 100%;
+  border-radius: 10px;
+  border: solid #575c72 3px;
+  box-shadow: #575c72 5px 5px 20px;
+}

@@ -68,8 +68,10 @@ function App() {
 
     const pointerUpHandler = ({ type }: AppState['activeTool']): void => {
       if (type == 'freedraw' || type == 'eraser' || type == 'selection') {
-        // selection may cause over load
-        setTimeout(() => updateStrokes({ elements: excalidrawAPI?.getSceneElements() }))
+        setTimeout(() => {
+          const elements = excalidrawAPI!.getSceneElements()!
+          updateStrokes({ elements })
+        })
       }
     }
 
@@ -85,14 +87,28 @@ function App() {
 
   const keyDownHandler: KeyboardEventHandler<HTMLDivElement> = useCallback(
     (event) => {
+      // Prevent writing in text boxes
+      if (document.activeElement?.nodeName === 'TEXTAREA') {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+
+      // Only allow certain keys to be pressed in the canvas
+      // This prevents access to hidden tools e.g. pressing "r" to enter rectangle mode
       if (
         event.code === 'Backspace' ||
         event.code.includes('Arrow') ||
-        (event.ctrlKey && ['KeyV', 'KeyZ', 'KeyY'].includes(event.code))
+        ((event.ctrlKey || event.metaKey) &&
+          ['KeyC', 'KeyV', 'KeyZ', 'KeyY', 'Equal', 'Minus', 'Digit0'].includes(event.code))
       ) {
         setTimeout(() => {
           updateStrokes({ elements: excalidrawAPI?.getSceneElements() })
         })
+      } else if (
+        !['KeyH', 'KeyE', 'KeyV', 'KeyP', 'Digit1', 'Digit0', 'Digit7'].includes(event.code)
+      ) {
+        event.preventDefault()
+        event.stopPropagation()
       }
     },
     [excalidrawAPI, updateStrokes]
@@ -123,7 +139,7 @@ function App() {
       </div>
       <MathJaxContext>
         <div className="flex-container">
-          <MathJax>{latex}</MathJax>
+          <MathJax>{`\\( ${latex} \\)`}</MathJax>
         </div>
       </MathJaxContext>
       <Button onClick={exportSVG}>Save 💾</Button>

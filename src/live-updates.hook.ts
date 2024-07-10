@@ -28,6 +28,9 @@ const transformStrokesForAPI = (strokes: Strokes): Record<string, number[][]> =>
   for (const element of strokes.elements ?? []) {
     const newStrokeX: number[] = []
     const newStrokeY: number[] = []
+
+    if (element.type !== 'freedraw') continue
+
     for (const [x, y] of (element as ExcalidrawFreeDrawElement).points) {
       newStrokeX.push(x + element.x)
       newStrokeY.push(y + element.y)
@@ -83,9 +86,7 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
 
       const latexFetch = getLatexFromStrokes(token, strokes, abortController)
       latexFetch
-        .then(({ data }) =>
-          setLatex(`\\( ${data.latex_styled || '\\text{Failed to parse handwriting}'} \\)`)
-        )
+        .then(({ data }) => setLatex(data.latex_styled || '\\text{Failed to parse handwriting}'))
         .catch((error: Error | AxiosError) => {
           if (axios.isAxiosError(error) && error.response?.status === 401) {
             getToken()

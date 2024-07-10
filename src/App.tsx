@@ -7,7 +7,7 @@ import {
 } from '@excalidraw/excalidraw/types/types'
 import { Button, Theme } from '@radix-ui/themes'
 import { MathJax, MathJaxContext } from 'better-react-mathjax'
-import { useCallback, useEffect, useState } from 'react'
+import { KeyboardEventHandler, useCallback, useEffect, useState } from 'react'
 
 import './App.css'
 import UserSelector from './UserSelector'
@@ -38,9 +38,10 @@ function App() {
 
   const clearCanvas = useCallback(() => {
     if (confirm('Are you sure you want to clear the board?')) {
+      updateStrokes({ elements: [] })
       excalidrawAPI?.updateScene({ elements: [] })
     }
-  }, [excalidrawAPI])
+  }, [excalidrawAPI, updateStrokes])
 
   useEffect(() => {
     axiosInstance.get(`/${username}/handwriting`).then((res) => {
@@ -50,7 +51,6 @@ function App() {
           appState: res.data.excalidraw.appState,
           elements: res.data.excalidraw.elements,
         })
-        // renderLatex()
       } else {
         excalidrawAPI?.updateScene({ elements: [] })
       }
@@ -67,41 +67,67 @@ function App() {
     canvas?.addEventListener('contextmenu', handleContextMenu)
 
     const pointerUpHandler = ({ type }: AppState['activeTool']): void => {
-      if (type == 'freedraw' || type == 'eraser') {
-        updateStrokes({ elements: excalidrawAPI?.getSceneElements() })
+      if (type == 'freedraw' || type == 'eraser' || type == 'selection') {
+        // selection may cause over load
+        setTimeout(() => updateStrokes({ elements: excalidrawAPI?.getSceneElements() }))
       }
     }
 
-    excalidrawAPI?.onPointerUp(pointerUpHandler)
+    const pointerUpCleanup = excalidrawAPI?.onPointerUp(pointerUpHandler)
 
-    return () => canvas?.removeEventListener('contextmenu', handleContextMenu)
+    return () => {
+      canvas?.removeEventListener('contextmenu', handleContextMenu)
+      if (pointerUpCleanup) pointerUpCleanup()
+    }
   }, [username, updateStrokes, excalidrawAPI])
 
   const pasteHandler = (data: ClipboardData): boolean => !data.text
 
+  const keyDownHandler: KeyboardEventHandler<HTMLDivElement> = useCallback(
+    (event) => {
+      if (
+        event.code === 'Backspace' ||
+        event.code.includes('Arrow') ||
+        (event.ctrlKey && ['KeyV', 'KeyZ', 'KeyY'].includes(event.code))
+      ) {
+        setTimeout(() => {
+          updateStrokes({ elements: excalidrawAPI?.getSceneElements() })
+        })
+      }
+    },
+    [excalidrawAPI, updateStrokes]
+  )
+
   return (
     <Theme radius="small" appearance="dark">
+      <div
+        style={{ height: '80vh' }}
+        onKeyDownCapture={keyDownHandler}
+        onDoubleClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+      >
+        <Excalidraw
+          zenModeEnabled
+          UIOptions={{ tools: { image: false } }}
+          gridModeEnabled
+          excalidrawAPI={setExcalidrawAPI}
+          initialData={excalidrawData}
+          onPaste={pasteHandler}
+        >
+          <MainMenu>
+            <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
+          </MainMenu>
+        </Excalidraw>
+      </div>
       <MathJaxContext>
-        <div style={{ height: '50vh' }}>
-          <Excalidraw
-            zenModeEnabled
-            UIOptions={{ tools: { image: false } }}
-            gridModeEnabled
-            excalidrawAPI={setExcalidrawAPI}
-            initialData={excalidrawData}
-            onPaste={pasteHandler}
-          >
-            <MainMenu>
-              <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
-            </MainMenu>
-          </Excalidraw>
-        </div>
         <div className="flex-container">
           <MathJax>{latex}</MathJax>
         </div>
-        <Button onClick={exportSVG}>Save 💾</Button>
-        <UserSelector username={username} setUsername={setUsername} />
       </MathJaxContext>
+      <Button onClick={exportSVG}>Save 💾</Button>
+      <UserSelector username={username} setUsername={setUsername} />
     </Theme>
   )
 }

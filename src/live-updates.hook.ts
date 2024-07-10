@@ -73,21 +73,30 @@ const useLiveUpdates = (username: string): LiveUpdateHook => {
   }, [])
 
   useEffect(() => {
-    if (strokes.elements?.length === 0) return
     const abortController = new AbortController()
 
-    const latexFetch = getLatexFromStrokes(token, strokes, abortController)
-    latexFetch
-      .then(({ data }) => setLatex(data.text))
-      .catch((error: Error | AxiosError) => {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          getToken()
-        } else {
-          console.error(error)
-        }
-      })
+    const timeout = setTimeout(() => {
+      if (strokes.elements?.length === 0) {
+        setLatex('')
+        return
+      }
+
+      const latexFetch = getLatexFromStrokes(token, strokes, abortController)
+      latexFetch
+        .then(({ data }) =>
+          setLatex(`\\( ${data.latex_styled || '\\text{Failed to parse handwriting}'} \\)`)
+        )
+        .catch((error: Error | AxiosError) => {
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            getToken()
+          } else {
+            console.error(error)
+          }
+        })
+    }, 300)
 
     return () => {
+      clearTimeout(timeout)
       abortController.abort('strokes changed')
     }
   }, [strokes, token, getToken])

@@ -19,12 +19,13 @@ div.App-toolbar .Stack {
   }
 }
 
+$toolbarItems: 'Edit', 'Duplicate', 'Redo', 'Undo';
+
 div.App-toolbar-content {
-  [aria-label='Edit'] {
-    display: none;
-  }
-  [aria-label='Duplicate'] {
-    display: none;
+  @each $item in $toolbarItems {
+    [aria-label='#{$item}'] {
+      display: none;
+    }
   }
 }
 
@@ -35,4 +36,8 @@ div.mobile-misc-tools-container {
   [title^='Keep selected'] {
     display: none;
   }
+}
+
+.excalidraw-textEditorContainer {
+  opacity: 0;
 }

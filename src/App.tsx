@@ -1,26 +1,27 @@
 import { Excalidraw, MainMenu, serializeAsJSON } from '@excalidraw/excalidraw'
 import { ClipboardData } from '@excalidraw/excalidraw/types/clipboard'
 import {
+  AppState,
   ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types/types'
 import { Button, Theme } from '@radix-ui/themes'
 import { MathJax, MathJaxContext } from 'better-react-mathjax'
-import { useCallback, useEffect, useState } from 'react'
+import { KeyboardEventHandler, useCallback, useEffect, useState } from 'react'
 
 import './App.css'
 import UserSelector from './UserSelector'
 import axiosInstance from './axios'
 import './excalidraw.overrides.scss'
+import useLiveUpdates from './live-updates.hook'
 
 const USER = 'hpotter'
 
 function App() {
-  const [latex, setLatex] = useState('')
-  const [confidence, setConfidence] = useState(0)
   const [username, setUsername] = useState(USER)
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null)
   const [excalidrawData, setExcalidrawData] = useState<ExcalidrawInitialDataState | null>(null)
+  const { latex, updateStrokes } = useLiveUpdates(username)
 
   const exportSVG = () => {
     const asJSON = serializeAsJSON(
@@ -37,17 +38,10 @@ function App() {
 
   const clearCanvas = useCallback(() => {
     if (confirm('Are you sure you want to clear the board?')) {
+      updateStrokes({ elements: [] })
       excalidrawAPI?.updateScene({ elements: [] })
     }
-  }, [excalidrawAPI])
-
-  const renderLatex = useCallback(() => {
-    // api call
-    axiosInstance.get(`/${username}/latex`).then((res) => {
-      setLatex(res.data.text)
-      setConfidence(res.data.confidence)
-    })
-  }, [username])
+  }, [excalidrawAPI, updateStrokes])
 
   useEffect(() => {
     axiosInstance.get(`/${username}/handwriting`).then((res) => {
@@ -57,7 +51,6 @@ function App() {
           appState: res.data.excalidraw.appState,
           elements: res.data.excalidraw.elements,
         })
-        // renderLatex()
       } else {
         excalidrawAPI?.updateScene({ elements: [] })
       }
@@ -73,37 +66,84 @@ function App() {
 
     canvas?.addEventListener('contextmenu', handleContextMenu)
 
-    return () => canvas?.removeEventListener('contextmenu', handleContextMenu)
-  }, [username, renderLatex, excalidrawAPI])
+    const pointerUpHandler = ({ type }: AppState['activeTool']): void => {
+      if (type == 'freedraw' || type == 'eraser' || type == 'selection') {
+        setTimeout(() => {
+          const elements = excalidrawAPI!.getSceneElements()!
+          updateStrokes({ elements })
+        })
+      }
+    }
 
-  const pasteHandler = (data: ClipboardData, _: any): boolean => !data.text
+    const pointerUpCleanup = excalidrawAPI?.onPointerUp(pointerUpHandler)
+
+    return () => {
+      canvas?.removeEventListener('contextmenu', handleContextMenu)
+      if (pointerUpCleanup) pointerUpCleanup()
+    }
+  }, [username, updateStrokes, excalidrawAPI])
+
+  const pasteHandler = (data: ClipboardData): boolean => !data.text
+
+  const keyDownHandler: KeyboardEventHandler<HTMLDivElement> = useCallback(
+    (event) => {
+      // Prevent writing in text boxes
+      if (document.activeElement?.nodeName === 'TEXTAREA') {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+
+      // Only allow certain keys to be pressed in the canvas
+      // This prevents access to hidden tools e.g. pressing "r" to enter rectangle mode
+      if (
+        event.code === 'Backspace' ||
+        event.code.includes('Arrow') ||
+        ((event.ctrlKey || event.metaKey) &&
+          ['KeyC', 'KeyV', 'KeyZ', 'KeyY', 'Equal', 'Minus', 'Digit0'].includes(event.code))
+      ) {
+        setTimeout(() => {
+          updateStrokes({ elements: excalidrawAPI?.getSceneElements() })
+        })
+      } else if (
+        !['KeyH', 'KeyE', 'KeyV', 'KeyP', 'Digit1', 'Digit0', 'Digit7'].includes(event.code)
+      ) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    },
+    [excalidrawAPI, updateStrokes]
+  )
 
   return (
     <Theme radius="small" appearance="dark">
+      <div
+        style={{ height: '80vh' }}
+        onKeyDownCapture={keyDownHandler}
+        onDoubleClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+      >
+        <Excalidraw
+          zenModeEnabled
+          UIOptions={{ tools: { image: false } }}
+          gridModeEnabled
+          excalidrawAPI={setExcalidrawAPI}
+          initialData={excalidrawData}
+          onPaste={pasteHandler}
+        >
+          <MainMenu>
+            <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
+          </MainMenu>
+        </Excalidraw>
+      </div>
       <MathJaxContext>
-        <div style={{ height: '50vh' }}>
-          <Excalidraw
-            zenModeEnabled
-            UIOptions={{ tools: { image: false } }}
-            gridModeEnabled
-            excalidrawAPI={setExcalidrawAPI}
-            initialData={excalidrawData}
-            onPaste={pasteHandler}
-          >
-            <MainMenu>
-              <MainMenu.Item onSelect={clearCanvas}>Clear canvas</MainMenu.Item>
-            </MainMenu>
-          </Excalidraw>
-        </div>
         <div className="flex-container">
-          <MathJax>{latex}</MathJax>
-          <Button onClick={renderLatex}>Render Latex 🔎</Button>
+          <MathJax>{`\\( ${latex} \\)`}</MathJax>
         </div>
-        <div>Confidence: {confidence}</div>
-        <br />
-        <Button onClick={exportSVG}>Save 💾</Button>
-        <UserSelector username={username} setUsername={setUsername} />
       </MathJaxContext>
+      <Button onClick={exportSVG}>Save 💾</Button>
+      <UserSelector username={username} setUsername={setUsername} />
     </Theme>
   )
 }
